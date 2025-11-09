@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daftar Nama</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex items-center justify-center bg-blue-50">
+  <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl p-8">
+    <h1 class="text-4xl font-bold text-center mb-8">Daftar Nama</h1>
+
+    <form id="name-form" class="mb-8">
+      <label class="block text-lg font-medium mb-2">Masukkan Nama:</label>
+      <input type="text" id="name-input" required class="w-full px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 mb-4" placeholder="Ketik nama di sini...">
+      <button type="submit" id="submit-btn" class="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold">Simpan Nama</button>
+    </form>
+
+    <div>
+      <h2 class="text-2xl font-bold mb-4">Daftar Nama Tersimpan (<span id="count">0</span>)</h2>
+      <div id="names-list" class="space-y-3 max-h-96 overflow-y-auto text-lg text-gray-700"></div>
+    </div>
+  </div>
+
+  <script>
+    // Ganti URL ini dengan URL Web App kamu dari Google Apps Script (yang diakhiri /exec)
+    const SHEET_URL = "https://script.google.com/macros/s/AKfycbxX7MSsuejfbFibBdi1mnNkI8D0dY8fpcaHOfNFYz8CG2GVVf2d6vtG-kTsViBueQxFxw/exec";
+
+    // Proxy gratis untuk bypass CORS
+    const PROXY = "https://api.allorigins.win/raw?url=";
+
+    // Ambil data dari Google Sheets
+    async function loadNames() {
+      try {
+        const res = await fetch(PROXY + encodeURIComponent(SHEET_URL));
+        const text = await res.text();
+        const data = JSON.parse(text);
+
+        const list = document.getElementById("names-list");
+        const count = document.getElementById("count");
+        list.innerHTML = "";
+
+        data.reverse().forEach(item => {
+          const div = document.createElement("div");
+          div.className = "p-3 border rounded-lg flex justify-between items-center";
+          div.innerHTML = `<span>${item.nama}</span><small class="text-gray-500">${new Date(item.waktu).toLocaleString('id-ID')}</small>`;
+          list.appendChild(div);
+        });
+
+        count.textContent = data.length;
+      } catch (err) {
+        console.error("Gagal memuat data:", err);
+      }
+    }
+
+    // Kirim data ke Google Sheets
+    document.getElementById("name-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const nama = document.getElementById("name-input").value.trim();
+      if (!nama) return;
+
+      try {
+        const res = await fetch(PROXY + encodeURIComponent(SHEET_URL), {
+          method: "POST",
+          body: JSON.stringify({ nama }),
+          headers: { "Content-Type": "application/json" },
+        });
+
+        const text = await res.text();
+        console.log("Respon:", text);
+
+        document.getElementById("name-input").value = "";
+        await loadNames();
+      } catch (err) {
+        console.error("Gagal menyimpan data:", err);
+        alert("❌ Gagal menyimpan data. Coba lagi nanti.");
+      }
+    });
+
+    // Jalankan saat halaman pertama kali dibuka
+    loadNames();
+  </script>
+</body>
+</html>
